@@ -1,24 +1,9 @@
 FROM python:3.12-slim
 
-# Install system dependencies for Playwright Chromium
-RUN apt-get update && apt-get install -y \
-    wget \
-    gnupg \
+# curl needed for the container healthcheck; ca-certificates for outbound HTTPS
+RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
-    libnss3 \
-    libatk-bridge2.0-0 \
-    libdrm2 \
-    libxkbcommon0 \
-    libgbm1 \
-    libasound2 \
-    libxrandr2 \
-    libxfixes3 \
-    libxdamage1 \
-    libxcomposite1 \
-    libpango-1.0-0 \
-    libcairo2 \
-    fonts-liberation \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /code
@@ -27,16 +12,16 @@ WORKDIR /code
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Playwright Chromium browser
-RUN playwright install chromium --with-deps
+# NOTE: Playwright/Chromium is intentionally NOT installed in this image.
+# ENABLE_SCREENSHOT_TOOL=false on memory-constrained hosts (Render free/512MB) —
+# every other investigator tool still runs. On a host with >=2GB RAM, set
+# ENABLE_SCREENSHOT_TOOL=true and add back:
+#   RUN playwright install --with-deps chromium
 
 # Copy application
 COPY . .
 
-# Create screenshots directory
-RUN mkdir -p /tmp/kavach_screenshots
-
-# Warm the local embedding model into the image so first request isn't slow
+# Warm the local embedding model into the image so the first request isn't slow
 RUN python -c "from fastembed import TextEmbedding; TextEmbedding(model_name='BAAI/bge-small-en-v1.5')" || true
 
 # Host injects $PORT — default to 8000
