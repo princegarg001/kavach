@@ -30,4 +30,8 @@ EXPOSE 8000
 
 # Single worker: the SSE queue, rate-limit state, dedup cache and the APScheduler
 # are all in-process. Scale with replicas, not workers.
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT} --workers 1"]
+# --proxy-headers + --forwarded-allow-ips: Render terminates TLS at its edge and
+# proxies plain HTTP to the container. Without these, uvicorn reports scheme=http
+# and request.url is wrong — which breaks Twilio's X-Twilio-Signature check
+# (computed against the https:// URL Twilio actually posted to).
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT} --workers 1 --proxy-headers --forwarded-allow-ips='*'"]
