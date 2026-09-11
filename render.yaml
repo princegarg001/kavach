@@ -2,6 +2,7 @@ services:
   - type: web
     name: kavach-backend
     runtime: docker
+    plan: free
     rootDir: backend
     dockerfilePath: Dockerfile
     healthCheckPath: /health
@@ -41,7 +42,7 @@ services:
       - key: APP_ENV
         value: production
       - key: CORS_ORIGINS
-        sync: false
+        value: "https://kavach-frontend.onrender.com"
       - key: INGEST_SECRET
         sync: false
       - key: TWILIO_VALIDATE_SIGNATURE
@@ -56,12 +57,23 @@ services:
         value: "2"
       - key: EDUCATION_NOTES_ENABLED
         value: "true"
+      - key: DIGEST_ENABLED
+        value: "true"
+      - key: DIGEST_HOUR
+        value: "8"
+      - key: ENABLE_SCREENSHOT_TOOL
+        value: "false"  # free tier is 512MB — Chromium + fastembed together risk OOM
 
   - type: web
     name: kavach-frontend
-    runtime: docker
+    runtime: static
     rootDir: frontend
-    dockerfilePath: Dockerfile
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
-        sync: false
+        value: "https://kavach-backend.onrender.com"
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

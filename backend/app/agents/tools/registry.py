@@ -177,6 +177,9 @@ async def _t_landing_page(state: InvestigationState, url: str = "", **_: Any) ->
 
 
 async def _t_screenshot(state: InvestigationState, url: str = "", **_: Any) -> dict:
+    from app.config import settings
+    if not settings.ENABLE_SCREENSHOT_TOOL:
+        return {"captured": False, "note": "screenshot tool disabled on this deployment (low-memory host)"}
     shot = await capture_screenshot(url)
     if shot:
         state.screenshot_b64 = shot

@@ -328,7 +328,7 @@ async def run_investigator_fixed(
 
     # Screenshot the first (most suspicious) URL
     screenshot_path = None
-    if urls:
+    if urls and settings.ENABLE_SCREENSHOT_TOOL:
         try:
             screenshot_path = await capture_screenshot(urls[0])
             if screenshot_path:

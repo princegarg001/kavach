@@ -84,6 +84,10 @@ class Settings(BaseSettings):
     # ── Sender Reputation ────────────────────────────────────────
     REPUTATION_REPEAT_OFFENDER_THRESHOLD: int = 2  # prior confirmed scams => repeat offender
 
+    # Set false on low-memory hosts (e.g. Render free 512MB) — headless Chromium
+    # alongside fastembed can OOM there. All other investigator tools still run.
+    ENABLE_SCREENSHOT_TOOL: bool = True
+
     # ── Educator ─────────────────────────────────────────────────
     EDUCATION_NOTES_ENABLED: bool = True
 
