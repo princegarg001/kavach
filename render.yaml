@@ -1,0 +1,67 @@
+services:
+  - type: web
+    name: kavach-backend
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: AGENT_RUNTIME
+        value: strands
+      - key: LLM_PROVIDER
+        value: groq
+      - key: GROQ_API_KEY
+        sync: false
+      - key: LLM_FAST_MODEL
+        value: openai/gpt-oss-20b
+      - key: LLM_SMART_MODEL
+        value: openai/gpt-oss-120b
+      - key: EMBED_PROVIDER
+        value: fastembed
+      - key: EMBED_MODEL_NAME
+        value: BAAI/bge-small-en-v1.5
+      - key: EMBED_DIM
+        value: "384"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_WHATSAPP_FROM
+        value: "whatsapp:+14155238886"
+      - key: MOTHER_PHONE
+        sync: false
+      - key: NATU_PHONE
+        sync: false
+      - key: APP_ENV
+        value: production
+      - key: CORS_ORIGINS
+        sync: false
+      - key: INGEST_SECRET
+        sync: false
+      - key: TWILIO_VALIDATE_SIGNATURE
+        value: "true"
+      - key: PIPELINE_MODE
+        value: local
+      - key: INVESTIGATOR_MODE
+        value: agentic
+      - key: INVESTIGATOR_MAX_STEPS
+        value: "6"
+      - key: REPUTATION_REPEAT_OFFENDER_THRESHOLD
+        value: "2"
+      - key: EDUCATION_NOTES_ENABLED
+        value: "true"
+
+  - type: web
+    name: kavach-frontend
+    runtime: docker
+    rootDir: frontend
+    dockerfilePath: Dockerfile
+    envVars:
+      - key: VITE_API_URL
+        sync: false

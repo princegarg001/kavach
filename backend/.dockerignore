@@ -1,0 +1,12 @@
+.env
+.env.*
+.venv
+.venv-test
+__pycache__
+*.pyc
+.pytest_cache
+eval/results
+.git
+.bedrock_agentcore.yaml
+Dockerfile
+.dockerignore

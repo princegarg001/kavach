@@ -1,0 +1,62 @@
+# Core
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+python-multipart==0.0.9
+pydantic==2.9.0
+pydantic-settings==2.5.2
+
+# Strands Agents SDK — every reasoning agent (triage, investigator, doer, educator)
+# runs as a strands.Agent. [openai] pulls the OpenAI-compatible model provider
+# used for Groq / OpenAI / Azure.
+strands-agents[openai]>=1.0.0
+
+# LLM client — also used on the direct fallback path (Groq / OpenAI / Azure)
+openai>=1.51.0
+
+# Local embeddings (no API key) — used when EMBED_PROVIDER=fastembed
+# NOTE: needs Python 3.11 or 3.12 (onnxruntime has no 3.13/3.14 wheels yet).
+fastembed>=0.4,<0.6
+
+# Database
+supabase==2.9.1
+psycopg2-binary==2.9.10
+
+# Messaging
+twilio==9.3.3
+
+# AWS — only needed by the ingress when PIPELINE_MODE=agentcore (invokes the runtime)
+boto3>=1.35.0
+
+# Link Investigation
+requests==2.32.3
+rapidfuzz==3.10.0
+cryptography==43.0.1
+
+# Browser automation
+playwright==1.48.0
+
+# Embeddings & vector ops
+numpy==1.26.4
+
+# YAML policy engine
+PyYAML==6.0.2
+
+# Utilities
+python-dotenv==1.0.1
+httpx==0.27.2
+aiohttp==3.10.8
+asyncio-throttle==1.0.2
+
+# Infrastructure hardening
+cachetools==5.5.0
+tenacity==9.0.0
+structlog==24.4.0
+apscheduler==3.10.4
+
+# HTML analysis
+beautifulsoup4==4.12.3
+lxml==5.3.0
+
+# Evaluation
+scikit-learn==1.5.2
+pandas==2.2.3

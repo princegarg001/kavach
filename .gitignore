@@ -1,0 +1,30 @@
+# ── secrets — never commit ───────────────────────────────────────────────────
+backend/.env
+backend/.env.*
+!backend/.env.example
+.bedrock_agentcore.yaml
+*.pem
+*.key
+
+# ── Python ───────────────────────────────────────────────────────────────────
+backend/.venv/
+backend/.venv-test/
+__pycache__/
+*.pyc
+.pytest_cache/
+backend/eval/results/
+
+# ── Node / frontend ──────────────────────────────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+*.local
+npm-debug.log*
+
+# ── OS / editor ──────────────────────────────────────────────────────────────
+.DS_Store
+.vscode/
+.idea/
+
+# ── misc ─────────────────────────────────────────────────────────────────────
+*.log

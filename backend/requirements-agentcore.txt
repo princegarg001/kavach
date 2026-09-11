@@ -1,0 +1,6 @@
+# Dependencies for the AgentCore Runtime container (agentcore_app.py).
+# = the full backend + the AgentCore runtime SDK.
+-r requirements.txt
+
+bedrock-agentcore>=0.1.0
+bedrock-agentcore-starter-toolkit>=0.1.0

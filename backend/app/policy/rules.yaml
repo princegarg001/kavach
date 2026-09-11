@@ -1,0 +1,214 @@
+# Kavach Escalation Policy Rules v2
+# "The model investigates. Code decides."
+#
+# Rules are evaluated top-to-bottom. First match wins.
+# This is deterministic — no LLM involved in deciding these outcomes.
+#
+# CRITICAL: Rules are ordered most-specific/urgent FIRST.
+# Fixed in v2: Tier 6/7 (urgent scams) now fire BEFORE Tier 5 (regular escalation).
+
+rules:
+  # ── Tier 1: Immunity ledger short-circuit ────────────────────────────────────
+  - id: immunity_high_similarity
+    name: "Immunity match — high confidence variant"
+    priority: 1
+    conditions:
+      immunity_matched: true
+      immunity_similarity_gte: 0.85
+    action: silent_kill
+    reason: "Variant of a previously confirmed scam. Blocked by immunity ledger."
+
+  - id: immunity_medium_similarity
+    name: "Immunity match — medium confidence"
+    priority: 1
+    conditions:
+      immunity_matched: true
+      immunity_similarity_gte: 0.80
+    action: silent_kill
+    reason: "Probable variant of a known scam. Blocked by immunity ledger."
+
+  # ── Tier 1b: Repeat offender — this sender is already a known scammer ────────
+  - id: repeat_offender_silent_kill
+    name: "Repeat offender — sender confirmed as scammer 2+ times"
+    priority: 1
+    conditions:
+      sender_repeat_offender: true
+      triage_category: "scam"
+      triage_confidence_gte: 0.55
+    action: silent_kill
+    reason: "Sender already confirmed as a scammer by this family. Blocked automatically."
+
+  - id: repeat_offender_escalate
+    name: "Repeat offender — sending something new"
+    priority: 1
+    conditions:
+      sender_repeat_offender: true
+    action: escalate_natu
+    escalation_target: natu
+    reason: "Message from a sender previously confirmed as a scammer. Escalating for review."
+
+  # ── Tier 2: Confirmed known-bad (corroborated by threat intel) ───────────────
+  - id: known_bad_domain_confirmed
+    name: "Known-bad domain — corroborated by threat intel"
+    priority: 2
+    conditions:
+      investigation_verdict: "scam"
+      investigation_confidence_gte: 0.90
+      has_urlhaus_or_phishtank_hit: true
+    action: silent_kill
+    reason: "Domain confirmed malicious by URLhaus or PhishTank."
+
+  - id: known_bad_domain_high_confidence
+    name: "Known-bad domain — high investigator confidence"
+    priority: 2
+    conditions:
+      investigation_verdict: "scam"
+      investigation_confidence_gte: 0.85
+    action: silent_kill
+    reason: "High-confidence scam verdict from investigator."
+
+  # ── Tier 3: URGENT — Confirmed fraud with active victim engagement ──────────
+  # NOTE: This was Tier 7 in v1 — moved up so it fires BEFORE generic money/credentials rule
+  - id: confirmed_fraud_active
+    name: "Confirmed fraud, victim likely engaged"
+    priority: 3
+    conditions:
+      investigation_verdict: "scam"
+      investigation_confidence_gte: 0.90
+      action_demanded_in:
+        - pay_money
+        - share_otp
+    action: escalate_natu_urgent
+    escalation_target: natu
+    prepare_chakshu: true
+    reason: "Confirmed fraud. Chakshu + 1930 complaint pre-filled for one tap."
+
+  # ── Tier 4: URGENT — Suspected active compromise ────────────────────────────
+  # NOTE: This was Tier 6 in v1 — moved up so it fires BEFORE generic money/credentials rule
+  - id: suspected_compromise
+    name: "Suspected active compromise"
+    priority: 4
+    conditions:
+      investigation_verdict: "scam"
+      action_demanded_in:
+        - share_otp
+        - personal_info
+      triage_confidence_gte: 0.80
+    action: escalate_natu_urgent
+    escalation_target: natu
+    reason: "Suspected active compromise. Immediate escalation + revoke link."
+
+  # ── Tier 5: OTP sharing demand — instant danger ──────────────────────────────
+  # NEW: OTP theft is the most dangerous scam type in India
+  - id: otp_sharing_demand
+    name: "OTP sharing demand detected"
+    priority: 5
+    conditions:
+      triage_category: "scam"
+      action_demanded_in:
+        - share_otp
+      triage_confidence_gte: 0.70
+    action: escalate_natu_urgent
+    escalation_target: natu
+    reason: "OTP sharing demand detected — most dangerous scam type. Immediate escalation."
+
+  # ── Tier 6: Routine admin — agent acts ──────────────────────────────────────
+  - id: routine_admin_no_risk
+    name: "Routine admin — no money or credentials"
+    priority: 6
+    conditions:
+      triage_category: "routine_admin"
+      triage_confidence_gte: 0.75
+      no_amount: true
+      no_action_demanded: true
+    action: act
+    reason: "Routine admin message handled by Doer agent."
+
+  - id: routine_admin_bank_alert
+    name: "Bank alert rewrite"
+    priority: 6
+    conditions:
+      triage_category: "routine_admin"
+      triage_confidence_gte: 0.70
+    action: act
+    reason: "Bank/payment alert processed and rewritten by Doer agent."
+
+  # ── Tier 7: Unknown, low stakes — escalate to Mother ────────────────────────
+  - id: unknown_no_high_risk
+    name: "Unknown sender, no money or credentials"
+    priority: 7
+    conditions:
+      triage_category: "unknown"
+      no_amount: true
+      no_credential_action: true
+    action: escalate_mother
+    escalation_target: mother
+    reason: "Unknown message with no high-risk signals. Asking for simple yes/no."
+
+  - id: scam_low_confidence
+    name: "Possible scam, low confidence"
+    priority: 7
+    conditions:
+      triage_category: "scam"
+      triage_confidence_lt: 0.65
+      no_amount: true
+    action: escalate_mother
+    escalation_target: mother
+    reason: "Possible scam but low confidence. Deferring to trusted contact."
+
+  # ── Tier 8: Money or credentials at risk — escalate to Natu ─────────────────
+  # NOTE: This was Tier 5 in v1 — moved AFTER urgent rules so specific dangers fire first
+  - id: scam_high_confidence_with_url
+    name: "High-confidence scam with link"
+    priority: 8
+    conditions:
+      triage_category: "scam"
+      triage_confidence_gte: 0.80
+      has_urls: true
+    action: escalate_natu
+    escalation_target: natu
+    reason: "High-confidence phishing attempt. Escalating for one-tap decision."
+
+  - id: money_or_credentials
+    name: "Money, credentials, or account access involved"
+    priority: 8
+    conditions:
+      any_of:
+        - has_amount: true
+        - action_demanded_in:
+            - click_link
+            - share_otp
+            - personal_info
+            - pay_money
+    action: escalate_natu
+    escalation_target: natu
+    reason: "Money or credentials at risk. Escalating to trusted supervisor."
+
+  # ── Tier 9: Single prior scam from this sender + another scam-looking message ─
+  - id: sender_prior_scam
+    name: "Sender has one prior confirmed scam"
+    priority: 9
+    conditions:
+      sender_prior_scam_count_gte: 1
+      triage_category: "scam"
+      triage_confidence_gte: 0.55
+    action: escalate_natu
+    escalation_target: natu
+    reason: "This sender has scammed the family before. Escalating for a one-tap block."
+
+  # ── Default fallback ─────────────────────────────────────────────────────────
+  - id: default_personal
+    name: "Personal message — no action"
+    priority: 99
+    conditions:
+      triage_category: "personal"
+    action: act
+    reason: "Personal message. No action required."
+
+  - id: default_fallback
+    name: "Default fallback — escalate to Mother"
+    priority: 99
+    conditions: {}  # always matches
+    action: escalate_mother
+    escalation_target: mother
+    reason: "Unclassified message. Asking for guidance."
