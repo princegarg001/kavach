@@ -362,6 +362,19 @@ async def health():
     }
 
 
+@app.get("/debug/request-info")
+async def debug_request_info(request: Request):
+    """Temporary — shows how the ASGI layer sees this request behind the proxy."""
+    return {
+        "url": str(request.url),
+        "scope_scheme": request.scope.get("scheme"),
+        "scope_server": request.scope.get("server"),
+        "headers": {k: v for k, v in request.headers.items()
+                    if k.lower() in ("host", "x-forwarded-proto", "x-forwarded-host",
+                                      "x-forwarded-for", "x-forwarded-port", "cf-visitor")},
+    }
+
+
 @app.post("/whatsapp")
 async def whatsapp_webhook(
     background_tasks: BackgroundTasks,
