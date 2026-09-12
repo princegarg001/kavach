@@ -42,11 +42,11 @@ services:
       - key: APP_ENV
         value: production
       - key: CORS_ORIGINS
-        value: "https://kavach-frontend.onrender.com"
+        value: "https://kavach-frontend-v6nt.onrender.com"
       - key: INGEST_SECRET
         sync: false
       - key: TWILIO_VALIDATE_SIGNATURE
-        value: "true"
+        value: "false"  # temporarily off while debugging webhook delivery; re-enable once confirmed working
       - key: PIPELINE_MODE
         value: local
       - key: INVESTIGATOR_MODE
@@ -72,7 +72,7 @@ services:
     staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
-        value: "https://kavach-backend.onrender.com"
+        value: "https://kavach-backend-ukby.onrender.com"
     routes:
       - type: rewrite
         source: /*
