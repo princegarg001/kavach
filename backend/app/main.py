@@ -364,7 +364,10 @@ async def health():
 
 @app.get("/debug/request-info")
 async def debug_request_info(request: Request):
-    """Temporary — shows how the ASGI layer sees this request behind the proxy."""
+    """Temporary — shows how the ASGI layer sees this request, and non-secret
+    fingerprints of the config actually loaded (lengths/prefixes only, never values)."""
+    tok = settings.TWILIO_AUTH_TOKEN or ""
+    sid = settings.TWILIO_ACCOUNT_SID or ""
     return {
         "url": str(request.url),
         "scope_scheme": request.scope.get("scheme"),
@@ -372,6 +375,16 @@ async def debug_request_info(request: Request):
         "headers": {k: v for k, v in request.headers.items()
                     if k.lower() in ("host", "x-forwarded-proto", "x-forwarded-host",
                                       "x-forwarded-for", "x-forwarded-port", "cf-visitor")},
+        "config": {
+            "PUBLIC_BASE_URL": settings.PUBLIC_BASE_URL,
+            "TWILIO_VALIDATE_SIGNATURE": settings.TWILIO_VALIDATE_SIGNATURE,
+            "TWILIO_AUTH_TOKEN_len": len(tok),
+            "TWILIO_AUTH_TOKEN_prefix": tok[:4],
+            "TWILIO_AUTH_TOKEN_suffix": tok[-4:],
+            "TWILIO_AUTH_TOKEN_has_whitespace": tok != tok.strip(),
+            "TWILIO_ACCOUNT_SID_len": len(sid),
+            "TWILIO_ACCOUNT_SID_prefix": sid[:6],
+        },
     }
 
 
