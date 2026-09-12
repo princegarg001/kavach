@@ -114,6 +114,11 @@ class Settings(BaseSettings):
     INGEST_SECRET: Optional[str] = None
     # Validate Twilio's X-Twilio-Signature on /whatsapp (needs the real public URL).
     TWILIO_VALIDATE_SIGNATURE: bool = False
+    # The exact public HTTPS URL this service is reachable at (no trailing slash),
+    # e.g. https://kavach-backend-ukby.onrender.com. Used as one of the candidate
+    # URLs when validating Twilio's signature, since proxy URL-reconstruction can
+    # be unreliable.
+    PUBLIC_BASE_URL: Optional[str] = None
     DEDUP_WINDOW_SECONDS: int = 600
 
     # local = run run_kavach_pipeline in-process; agentcore = invoke the AgentCore runtime

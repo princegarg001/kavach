@@ -86,16 +86,50 @@ def _require_ingest_token(request: Request) -> None:
 
 
 async def _validate_twilio(request: Request, form: dict) -> None:
-    """Validate X-Twilio-Signature. No-op unless TWILIO_VALIDATE_SIGNATURE and creds set."""
+    """
+    Validate X-Twilio-Signature. No-op unless TWILIO_VALIDATE_SIGNATURE and creds set.
+
+    Twilio signs the exact public URL it was configured to call. Behind a proxy
+    (Render's Cloudflare edge, etc.) the ASGI-reconstructed `request.url` can end
+    up with the wrong scheme/host even with --proxy-headers, so we try several
+    candidate URLs and accept if ANY of them validates. This doesn't weaken
+    security — the attacker still needs a signature valid for one of the URLs
+    Twilio could plausibly have used; it only avoids false-negative rejections
+    from proxy URL-reconstruction quirks.
+    """
     if not (settings.TWILIO_VALIDATE_SIGNATURE and settings.TWILIO_AUTH_TOKEN):
         return
+    sig = request.headers.get("X-Twilio-Signature", "")
+    if not sig:
+        raise HTTPException(status_code=403, detail="missing X-Twilio-Signature")
+
+    candidates: list[str] = []
+    seen: set[str] = set()
+
+    def _add(u: str | None):
+        if u and u not in seen:
+            seen.add(u)
+            candidates.append(u)
+
+    _add(str(request.url))
+    _add(str(request.url).replace("http://", "https://", 1))
+
+    fwd_proto = request.headers.get("x-forwarded-proto", "https").split(",")[0].strip()
+    fwd_host = request.headers.get("x-forwarded-host", "").split(",")[0].strip() or request.headers.get("host", "")
+    if fwd_host:
+        _add(f"{fwd_proto}://{fwd_host}{request.url.path}")
+        _add(f"https://{fwd_host}{request.url.path}")
+
+    if settings.PUBLIC_BASE_URL:
+        _add(settings.PUBLIC_BASE_URL.rstrip("/") + request.url.path)
+
     try:
         from twilio.request_validator import RequestValidator
         validator = RequestValidator(settings.TWILIO_AUTH_TOKEN)
-        sig = request.headers.get("X-Twilio-Signature", "")
-        url = str(request.url)
-        if not validator.validate(url, form, sig):
-            raise HTTPException(status_code=403, detail="invalid Twilio signature")
+        if any(validator.validate(u, form, sig) for u in candidates):
+            return
+        logger.warning(f"Twilio signature mismatch against all candidates: {candidates}")
+        raise HTTPException(status_code=403, detail="invalid Twilio signature")
     except HTTPException:
         raise
     except Exception as exc:

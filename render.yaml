@@ -46,7 +46,9 @@ services:
       - key: INGEST_SECRET
         sync: false
       - key: TWILIO_VALIDATE_SIGNATURE
-        value: "false"  # temporarily off while debugging webhook delivery; re-enable once confirmed working
+        value: "true"
+      - key: PUBLIC_BASE_URL
+        value: "https://kavach-backend-ukby.onrender.com"
       - key: PIPELINE_MODE
         value: local
       - key: INVESTIGATOR_MODE
