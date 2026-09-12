@@ -135,5 +135,6 @@ async def poll_once(handler: Callable[[InboundMessage], Awaitable]) -> int:
 
     for _, msg in items:
         logger.info(f"📧 new email from {msg.member_name[:40]}")
-        asyncio.create_task(handler(msg))
+        from app.tasks import spawn
+        spawn(handler(msg), name="email_ingest")
     return len(items)

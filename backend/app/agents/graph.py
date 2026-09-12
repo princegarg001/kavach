@@ -33,6 +33,7 @@ from app.agents.doer import run_doer, prepare_complaint
 from app.agents.educator import write_education_note
 from app.memory.immunity_ledger import check_immunity, write_immunity
 from app.memory.reputation import check_reputation, record_sighting, derive_sender_key
+from app.tasks import spawn
 from app.policy.engine import evaluate_policy
 from app.notifier.whatsapp import send_escalation
 
@@ -142,7 +143,7 @@ async def run_kavach_pipeline(msg: InboundMessage) -> Dict[str, Any]:
         result["policy"] = policy
         traces.append(StageTrace(stage="policy", duration_ms=int((time.monotonic() - tp) * 1000)))
         await _maybe_educate(traces, result, msg)
-        asyncio.create_task(record_sighting(sender_key, settings.GROUP_ID, "scam"))
+        spawn(record_sighting(sender_key, settings.GROUP_ID, "scam"), name="record_sighting")
         result["stage_traces"] = traces
         return result
 
@@ -197,11 +198,11 @@ async def run_kavach_pipeline(msg: InboundMessage) -> Dict[str, Any]:
     )
     if _scam_confirmed and not immunity_result.matched:
         logger.info("✍️  Writing scam signature to the immunity ledger")
-        asyncio.create_task(write_immunity(
+        spawn(write_immunity(
             raw_text=msg.raw_text, group_id=settings.GROUP_ID,
             member_id=msg.member_id, entities=triage_result.entities,
             investigation=investigation_result,
-        ))
+        ), name="write_immunity")
 
     # ── Stage 5b: Prepare complaint (held for one-tap approval, never filed) ───
     if policy.chakshu_prefilled or policy.action in _COMPLAINT_ACTIONS:
@@ -223,9 +224,9 @@ async def run_kavach_pipeline(msg: InboundMessage) -> Dict[str, Any]:
 
     # ── Stage 6: Execute policy action ───────────────────────────────────────
     if policy.escalation_target:
-        asyncio.create_task(send_escalation(
+        spawn(send_escalation(
             msg=msg, policy=policy, triage=triage_result, investigation=investigation_result,
-        ))
+        ), name="send_escalation")
 
     # ── Stage 7: Educator + reputation feedback ──────────────────────────────
     await _maybe_educate(traces, result, msg)
@@ -237,7 +238,7 @@ async def run_kavach_pipeline(msg: InboundMessage) -> Dict[str, Any]:
         else "safe" if triage_result.category in (Category.ROUTINE_ADMIN, Category.PERSONAL)
         else "unknown"
     )
-    asyncio.create_task(record_sighting(sender_key, settings.GROUP_ID, verdict_for_reputation))
+    spawn(record_sighting(sender_key, settings.GROUP_ID, verdict_for_reputation), name="record_sighting")
 
     result["stage_traces"] = traces
     total_ms = int((time.monotonic() - t_start) * 1000)
